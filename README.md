@@ -10,6 +10,8 @@ Time to integrate this in Flask app
 
 I have uploaded requirements.txt file but I just freezed pip. Not all libs are necessary
 
+Not adding `fine_tuned_bart` since it's very large:
+accees from here instead: https://drive.google.com/drive/folders/17bDdytEe0sLysZ-x2g0K4Rtyi1YhOw2p?usp=sharing
 ___
 
 <p align="center">
