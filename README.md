@@ -8,6 +8,8 @@ Fine Tuning Completed!
 
 Time to integrate this in Flask app
 
+I have uploaded requirements.txt file but I just freezed pip. Not all libs are necessary
+
 ___
 
 <p align="center">
