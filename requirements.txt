@@ -94,7 +94,6 @@ PyPDF2==3.0.1
 pytesseract==0.3.13
 python-dateutil==2.9.0
 pytz==2024.2
-pywin32==305.1
 PyYAML==6.0.2
 pyzmq==25.1.2
 redis==5.2.1
