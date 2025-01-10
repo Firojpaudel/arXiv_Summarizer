@@ -95,8 +95,9 @@ arXiv_Summarizer/
 ├── fine_tuned_bart/         # Directory to store the fine_tuned_bart model (needed to be downloaded from drive) 
 ├── templates/               # HTML templates for the app  
 ├── static/                  # Static files (CSS, JS, images)  
+├── README_images/           # Directory for README images  
 ├── requirements.txt         # Dependencies  
-└── README.md                # Project documentation (this file)  
+└── README.md                # Project documentation (this file)    
 ```
 ---
 ## 🤝 Contributions & License
