@@ -45,7 +45,7 @@ The project is **completed**! Here's what it includes:
 
     The model is not included here due to its size. Please download it from the following link and place it inside the directory:
 
-    [Download Model](https://drive.google.com/drive/folders/17bDdytEe0sLysZ-x2g0K4Rtyi1YhOw2p?usp=sharing)
+    [Download Model](https://drive.google.com/drive/u/2/folders/17bDdytEe0sLysZ-x2g0K4Rtyi1YhOw2p)
 5. **Run the app:**
 
     ```bash
