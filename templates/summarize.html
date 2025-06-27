@@ -11,12 +11,14 @@
       tex: {
         inlineMath: [['$', '$'], ['\\(', '\\)']],
         displayMath: [['$$', '$$'], ['\\[', '\\]']],
-        processEscapes: true
+        processEscapes: true, 
+        processEnvironments: true
       },
       options: {
-        skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
-      }
-    };
+      skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+      ignoreHtmlClass: 'tex2jax_ignore'
+    }
+  };
   </script>
   <meta name="description" content="Summarize research papers instantly with Abstractify. Upload a file or provide a URL to generate concise summaries.">
   <meta name="keywords" content="research, summary, AI, academic, papers">
