@@ -1,22 +1,24 @@
 import os
 import re
-from flask import Flask, render_template, request
+import json
+from time import sleep
+from flask import Flask, render_template, request, jsonify
 from werkzeug.utils import secure_filename
-import fitz  # PyMuPDF for PDF handling
 import requests
-from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
-import nltk
-from nltk.corpus import stopwords
+import google.generativeai as genai
 import markdown
+import logging
+from dotenv import load_dotenv
+from pydantic import BaseModel, Field, ValidationError
+import arxiv
+import PyPDF2  # Added for local extraction
 
+# Load environment variables
+load_dotenv()
 
-
-# Download required NLTK resources
-nltk.download('stopwords')
-nltk.download('punkt')
-
-# Initialize stopwords
-stop_words = set(stopwords.words('english'))
+# Configure logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
@@ -24,130 +26,355 @@ app = Flask(__name__)
 ALLOWED_EXTENSIONS = {'txt', 'pdf'}
 
 # Path to save uploaded files temporarily
-UPLOAD_FOLDER = 'uploads'
+UPLOAD_FOLDER = 'Uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# Initialize the models and tokenizers
-bart_model_path = "fine_tuned_bart"
-t5_model_path = "t5-base"
+# Configure Gemini API
+genai.configure(api_key=os.getenv('GEMINI_API_KEY'))
+gemini_model = genai.GenerativeModel('gemini-2.0-flash')
 
-bart_model = AutoModelForSeq2SeqLM.from_pretrained(bart_model_path)
-bart_tokenizer = AutoTokenizer.from_pretrained(bart_model_path)
+# Pydantic model for structured PDF extraction
+class PaperContent(BaseModel):
+    title: str = Field(default="Untitled Paper", description="The title of the paper")
+    abstract: str = Field(default="", description="The abstract of the paper")
+    body: str = Field(default="", description="The main body text of the paper, excluding references")
 
-t5_model = AutoModelForSeq2SeqLM.from_pretrained(t5_model_path)
-t5_tokenizer = AutoTokenizer.from_pretrained(t5_model_path)
+# Pydantic model for structured summary
+class SummaryOutput(BaseModel):
+    title: str = Field(default="Untitled Paper", description="The title of the paper")
+    summary: str = Field(default="", description="A concise summary of the paper in 3-4 paragraphs")
+    keywords: list[str] = Field(default=["research", "paper", "summary"], description="A list of 5-7 relevant keywords")
 
-# Check if the file extension is allowed
 def allowed_file(filename):
+    """Check if file extension is allowed."""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# Download PDF from a URL
-def download_pdf_from_url(url):
-    try:
-        response = requests.get(url, stream=True)
-        if response.status_code == 200:
-            pdf_path = os.path.join(app.config['UPLOAD_FOLDER'], "downloaded_temp.pdf")
-            with open(pdf_path, "wb") as f:
-                f.write(response.content)
-            return pdf_path
-        else:
-            return f"Error: Failed to download PDF. HTTP Status Code: {response.status_code}"
-    except Exception as e:
-        return f"Error downloading PDF from URL: {str(e)}"
+def download_pdf_from_url(url, retries=3):
+    """Download PDF from a URL with retries, handling 304 and timeouts."""
+    for attempt in range(retries):
+        try:
+            response = requests.get(url, stream=True, timeout=10, headers={'Cache-Control': 'no-cache'})
+            if response.status_code == 200:
+                pdf_path = os.path.join(app.config['UPLOAD_FOLDER'], "downloaded_temp.pdf")
+                with open(pdf_path, "wb") as f:
+                    f.write(response.content)
+                logger.info(f"Downloaded PDF from {url} to {pdf_path}")
+                return pdf_path
+            elif response.status_code == 304:
+                logger.warning(f"Received 304 Not Modified from {url} on attempt {attempt + 1}")
+                return None
+            else:
+                logger.warning(f"Failed to download PDF from {url}. HTTP Status Code: {response.status_code}")
+                return None
+        except requests.exceptions.RequestException as e:
+            logger.warning(f"Error on attempt {attempt + 1}: {str(e)}")
+            if attempt < retries - 1:
+                sleep(2)
+            else:
+                logger.error(f"Failed to download PDF after {retries} attempts: {str(e)}")
+                return None
 
-# Extract text from a PDF file
-def extract_text_from_pdf(pdf_path):
+def extract_arxiv_abstract(url):
+    """Fetch abstract from arXiv URL as fallback."""
     try:
-        doc = fitz.open(pdf_path)
-        text = ""
-        for page in doc:
-            text += page.get_text("text")
-        return text
+        arxiv_id = re.search(r'(\d+\.\d+[vV]\d*)', url)
+        if not arxiv_id:
+            return None
+        search = arxiv.Search(id_list=[arxiv_id.group(1)])
+        paper = next(search.results())
+        return paper.title + "\n\n" + paper.summary
     except Exception as e:
-        return f"Error extracting text from PDF: {str(e)}"
+        logger.error(f"Error fetching arXiv abstract: {str(e)}")
+        return None
 
-# Extract text from a TXT file
+def fix_latex_escapes(text):
+    """Preprocess Gemini response to handle LaTeX for JSON and convert to $$...$$."""
+    equations = []
+    def store_equation(match):
+        equations.append(match.group(0))
+        return f"__EQUATION_{len(equations)-1}__"
+    
+    text = re.sub(r'\$\$[\s\S]*?\$\$', store_equation, text)
+    
+    text = re.sub(r'\\\((.*?)\\\)', r'$$\1$$', text)
+    text = re.sub(r'\\\[([\s\S]*?)\\\]', r'$$\1$$', text)
+    text = re.sub(r'\\begin\{equation\}([\s\S]*?)\\end\{equation\}', r'$$\1$$', text)
+    
+    parts = []
+    current_pos = 0
+    for match in re.finditer(r'__EQUATION_\d+__', text):
+        start, end = match.span()
+        before = text[current_pos:start]
+        before = re.sub(r'(?<!\\)\\([^\n])', r'\\\\\1', before)
+        parts.append(before)
+        parts.append(match.group(0))
+        current_pos = end
+    remaining = text[current_pos:]
+    remaining = re.sub(r'(?<!\\)\\([^\n])', r'\\\\\1', remaining)
+    parts.append(remaining)
+    text = ''.join(parts)
+    
+    for i, eq in enumerate(equations):
+        text = text.replace(f"__EQUATION_{i}__", eq)
+    
+    text = re.sub(r'(?<!\\)\\([^\n])', r'\\\\\1', text)
+    
+    return text
+
+def parse_plain_text_response(text):
+    """Parse plain text response to extract title, summary/body, and keywords."""
+    lines = text.split('\n')
+    content = {'title': 'Untitled Paper', 'summary': '', 'keywords': ['research', 'paper', 'summary']}
+    current_field = None
+    summary_lines = []
+    
+    for line in lines:
+        line = line.strip()
+        if line.startswith('Title:'):
+            content['title'] = line[len('Title:'):].strip()
+        elif line.startswith('Abstract:') or line.startswith('Summary:'):
+            current_field = 'summary'
+            summary_lines.append(line[len('Abstract:') or len('Summary:'):].strip())
+        elif line.startswith('Keywords:'):
+            current_field = 'keywords'
+            content['keywords'] = [k.strip() for k in line[len('Keywords:'):].split(',')]
+        elif current_field == 'summary' and line:
+            summary_lines.append(line)
+        elif current_field == 'keywords' and line:
+            content['keywords'].extend([k.strip() for k in line.split(',')])
+    
+    content['summary'] = ' '.join(summary_lines).strip()
+    if 'body' in content:
+        content['summary'] = content['body']
+    return content
+
+def merge_summary_fields(content):
+    """Merge multiple 'summary' fields in JSON response into a single string."""
+    if 'summary' in content:
+        if isinstance(content['summary'], list):
+            content['summary'] = '\n\n'.join(str(s) for s in content['summary'] if s)
+        elif isinstance(content['summary'], dict):
+            content['summary'] = str(content['summary'])
+        elif not isinstance(content['summary'], str):
+            content['summary'] = str(content['summary'])
+    return content
+
+def extract_text_from_pdf(pdf_path, retries=5):
+    """Extract structured text from PDF using Gemini API with retries, falling back to local extraction."""
+    for attempt in range(retries):
+        try:
+            logger.info(f"Attempting to upload file: {pdf_path}")
+            logger.info(f"File size: {os.path.getsize(pdf_path)} bytes")
+            sample_file = genai.upload_file(path=pdf_path, display_name="arXiv_paper")
+            logger.info(f"Successfully uploaded file '{sample_file.display_name}' as: {sample_file.uri}")
+
+            prompt = (
+                "Extract the title, abstract, and main body text (excluding references, headers, footers, page numbers, "
+                "and LaTeX artifacts) from the provided PDF. Format all mathematical equations in LaTeX using $$...$$ "
+                "delimiters for both inline and display math (e.g., $$ E = mc^2 $$). Strictly avoid using \\(...\\), "
+                "\\[...\\], or \\begin{equation}...\\end{equation}. Return the output in JSON format with fields: title, "
+                "abstract, body. Ensure the JSON is valid with properly escaped characters."
+            )
+            logger.info("Sending request to Gemini API")
+            response = gemini_model.generate_content(
+                [prompt, sample_file],
+                generation_config={"response_mime_type": "application/json"},
+                request_options={"timeout": 60}  # Increased timeout to 60 seconds
+            )
+            
+            logger.debug(f"Gemini raw response: {response.text}")
+
+            fixed_response = fix_latex_escapes(response.text)
+            try:
+                content = json.loads(fixed_response)
+            except json.JSONDecodeError as e:
+                logger.warning(f"Invalid JSON response on attempt {attempt + 1}: {str(e)}")
+                if attempt < retries - 1:
+                    sleep(2)
+                    continue
+                logger.info("Falling back to local extraction")
+                return extract_text_from_pdf_local(pdf_path)
+
+            content = merge_summary_fields(content)
+
+            try:
+                paper_content = PaperContent(**content)
+            except ValidationError as e:
+                logger.warning(f"Pydantic validation error: {str(e)}")
+                content.setdefault('title', 'Untitled Paper')
+                content.setdefault('abstract', '')
+                content.setdefault('body', '')
+                paper_content = PaperContent(**content)
+
+            full_text = f"{paper_content.title}\n\n{paper_content.abstract}\n\n{paper_content.body}"
+            logger.info(f"Extracted text length: {len(full_text)} characters")
+            return full_text
+        except Exception as e:
+            logger.warning(f"Error on attempt {attempt + 1}: {str(e)}")
+            if attempt < retries - 1:
+                sleep(2)
+            else:
+                logger.error(f"Failed to extract text with Gemini after {retries} attempts: {str(e)}")
+                return extract_text_from_pdf_local(pdf_path)
+
+def extract_text_from_pdf_local(pdf_path):
+    """Extract text from PDF using PyPDF2 as a local fallback."""
+    try:
+        logger.info(f"Performing local extraction on: {pdf_path}")
+        with open(pdf_path, 'rb') as file:
+            reader = PyPDF2.PdfReader(file)
+            text = ""
+            for page in reader.pages:
+                text += page.extract_text() + "\n"
+            if not text.strip():
+                return "Error: No text extracted from PDF. The PDF may be scanned or encrypted."
+            return text
+    except Exception as e:
+        logger.error(f"Local extraction failed: {str(e)}")
+        return f"Error extracting text from PDF locally: {str(e)}"
+
 def extract_text_from_txt(file_path):
+    """Extract text from a TXT file."""
     try:
         with open(file_path, 'r', encoding='utf-8') as file:
             text = file.read()
         return text
     except Exception as e:
+        logger.error(f"Error extracting text from TXT: {str(e)}")
         return f"Error extracting text from TXT file: {str(e)}"
 
-# Clean text for model input
 def clean_text(text):
-    text = re.sub(r'\s*#\s*\d+\s*', '', text)  # Remove patterns like '# # 1 # 2 # 3'
-    text = re.sub(r'\b\d+\b', '', text)  # Remove stray numbers
-    text = text.replace("- ", "")  # Remove hyphenated breaks
-    text = re.sub(r'\s+', ' ', text)  # Remove extra spaces
+    """Clean text by removing residual LaTeX and metadata, preserving equations."""
+    equations = []
+    def store_equation(match):
+        equations.append(match.group(0))
+        return f"__EQUATION_{len(equations)-1}__"
+    text = re.sub(r'\$\$[\s\S]*?\$\$', store_equation, text)
+    
+    text = re.sub(r'\\begin\{[^}]*\}[\s\S]*?\\end\{[^}]*\}', '', text)
+    text = re.sub(r'\\\((.*?)\\\)', r'$$\1$$', text)
+    text = re.sub(r'\\\[([\s\S]*?)\\\]', r'$$\1$$', text)
+    text = re.sub(r'\\[a-zA-Z]+{[^}]*}', '', text)
+    text = re.sub(r'\{|\}', '', text)
+    text = re.sub(r'arXiv:\d+\.\d+[vV]\d*', '', text, flags=re.IGNORECASE)
+    text = re.sub(r'\[\s*[a-zA-Z]+\.\w+\s*\]', '', text)
+    text = re.sub(r'\bpacs\s*number\(s\)\s*:[^\n]*', '', text, flags=re.IGNORECASE)
+    text = re.sub(r'\b\d+\.\d+\.\w+\b', '', text)
+    text = text.replace("- ", "").replace("-\n", "")
+    text = re.sub(r'\s+', ' ', text)
+    text = re.sub(r'\n+', '\n', text)
+    for i, eq in enumerate(equations):
+        text = text.replace(f"__EQUATION_{i}__", eq)
     return text.strip()
 
-# Summarize text with BART
-def summarize_with_bart(text):
+def summarize_with_gemini(text, retries=3):
+    """Generate a summary using Gemini API with retries."""
+    for attempt in range(retries):
+        try:
+            prompt = (
+                "You are an expert research assistant. Carefully read the provided document. "
+                "Generate a concise, professional summary in 3-4 paragraphs, focusing on main ideas, "
+                "methodology, results, and contributions. Format all mathematical equations in LaTeX using "
+                "$$...$$ delimiters for both inline and display math (e.g., $$ E = mc^2 $$). Strictly avoid "
+                "using \\(...\\), \\[...\\], or \\begin{equation}...\\end{equation}. Avoid repetitive phrases "
+                "and ensure coherence. Extract 5-7 relevant keywords. Return the output in JSON format with "
+                "fields: title, summary (single string), keywords. Ensure the JSON is valid with properly "
+                "escaped characters."
+            )
+            response = gemini_model.generate_content(
+                [prompt, text],
+                generation_config={"response_mime_type": "application/json"},
+                request_options={"timeout": 60}
+            )
+            
+            logger.debug(f"Gemini summary raw response: {response.text}")
+
+            fixed_response = fix_latex_escapes(response.text)
+            try:
+                content = json.loads(fixed_response)
+            except json.JSONDecodeError as e:
+                logger.warning(f"Invalid JSON response on attempt {attempt + 1}: {str(e)}")
+                if attempt < retries - 1:
+                    sleep(2)
+                    continue
+                logger.info("Falling back to plain text summarization")
+                return fallback_summarize_text(text)
+
+            content = merge_summary_fields(content)
+
+            try:
+                summary_output = SummaryOutput(**content)
+            except ValidationError as e:
+                logger.warning(f"Pydantic validation error: {str(e)}")
+                content.setdefault('title', 'Untitled Paper')
+                content.setdefault('summary', 'Summary could not be generated due to incomplete data.')
+                content.setdefault('keywords', ['research', 'paper', 'summary'])
+                summary_output = SummaryOutput(**content)
+
+            formatted_summary = (
+                f"## Summary of \"{summary_output.title}...\"\n\n"
+                f"{summary_output.summary}\n\n"
+                f"**Keywords**: {', '.join(summary_output.keywords)}"
+            )
+            logger.info(f"Generated summary length: {len(formatted_summary)} characters")
+            return formatted_summary
+        except Exception as e:
+            logger.warning(f"Error on attempt {attempt + 1}: {str(e)}")
+            if attempt < retries - 1:
+                sleep(2)
+                continue
+            logger.error(f"Failed to summarize after {retries} attempts: {str(e)}")
+            return fallback_summarize_text(text)
+
+def fallback_summarize_text(text):
+    """Fallback to plain text summarization if JSON parsing fails."""
     try:
-        inputs = bart_tokenizer(text, return_tensors="pt", max_length=1024, truncation=True)
-        summary_ids = bart_model.generate(
-            inputs['input_ids'], max_length=500, min_length=300, num_beams=4, early_stopping=True
+        prompt = (
+            "You are an expert research assistant. Carefully read the provided document. "
+            "Generate a concise, professional summary in 3-4 paragraphs, focusing on main ideas, "
+            "methodology, results, and contributions. Format all mathematical equations in LaTeX using "
+            "$$...$$ delimiters (e.g., $$ E = mc^2 $$). Strictly avoid using \\(...\\), \\[...\\], "
+            "or \\begin{equation}...\\end{equation}. Avoid repetitive phrases and ensure coherence. "
+            "Extract 5-7 relevant keywords. Return the output as plain text with sections labeled as "
+            "'Title:', 'Summary:', and 'Keywords:'."
         )
-        summary = bart_tokenizer.decode(summary_ids[0], skip_special_tokens=True)
-        return summary
-    except Exception as e:
-        return f"Error summarizing with BART: {str(e)}"
-
-# Elaborate text with T5
-def elaborate_with_t5(bart_summary, title=None):
-    try:
-        # Include title in the elaboration prompt if available
-        input_prompt = f"elaborate: {bart_summary} (Title: {title})" if title else f"elaborate: {bart_summary}"
-
-        inputs = t5_tokenizer(input_prompt, return_tensors="pt", max_length=512, truncation=True)
-        elaboration_ids = t5_model.generate(
-            inputs['input_ids'], max_length=1000, min_length=700, num_beams=5, early_stopping=True
+        response = gemini_model.generate_content(
+            [prompt, text],
+            generation_config={"response_mime_type": "text/plain"},
+            request_options={"timeout": 60}
         )
-        elaboration = t5_tokenizer.decode(elaboration_ids[0], skip_special_tokens=True)
-
-        # Ensure at least two paragraphs
-        elaboration = re.sub(r'([.!?])\s*(?=\S)', r'\1\n\n', elaboration.strip())
-        paragraphs = elaboration.split("\n\n")
-        if len(paragraphs) < 2:
-            paragraphs = [elaboration[:len(elaboration)//2].strip(), elaboration[len(elaboration)//2:].strip()]
-
-        # Format the elaboration with the title
-        if title:
-            formatted_elaboration = f"#### Summary of \"{title}\...\" paper\n***\n" + "\n".join(paragraphs)
-        else:
-            formatted_elaboration = "\n\n".join(paragraphs)
-
-        return formatted_elaboration.strip()
+        content = parse_plain_text_response(response.text)
+        formatted_summary = (
+            f"## Summary of \"{content['title']}...\"\n\n"
+            f"{content['summary']}\n\n"
+            f"**Keywords**: {', '.join(content['keywords'])}"
+        )
+        logger.info(f"Fallback summary length: {len(formatted_summary)} characters")
+        return formatted_summary
     except Exception as e:
-        return f"Error elaborating with T5: {str(e)}"
+        logger.error(f"Fallback summarization failed: {str(e)}")
+        return f"Error summarizing with Gemini: {str(e)}"
 
-# Extract title from text (assumes title is in the first line or the first few lines)
-def extract_title_from_text(text):
-    lines = text.split("\n")
-    title = lines[0] if lines else "Untitled Paper"
-    return title.strip()
-
-# Process input text through summarization and elaboration
-def process_text(text):
+def process_text(text, url=None):
+    """Process text through cleaning and Gemini summarization."""
     cleaned_text = clean_text(text)
-    bart_summary = summarize_with_bart(cleaned_text)
-    if "Error" in bart_summary:
-        return bart_summary
-    title = extract_title_from_text(text)  # Extract title here
-    t5_elaboration = elaborate_with_t5(bart_summary, title)
-    return t5_elaboration
+    summary = summarize_with_gemini(cleaned_text)
+    if "Error" in summary and url:
+        arxiv_text = extract_arxiv_abstract(url)
+        if arxiv_text:
+            logger.info("Using arXiv API fallback for summarization")
+            return summarize_with_gemini(clean_text(arxiv_text))
+    return summary
 
-# Home route
 @app.route('/')
 def home():
+    """Render home page."""
     return render_template('index.html')
 
-# Summary route
 @app.route('/summary', methods=['GET', 'POST'])
 def summary():
+    """Handle summary generation."""
     result = None
     error_message = None
 
@@ -157,32 +384,41 @@ def summary():
             file = request.files.get('file')
             url = request.form.get('url')
 
-            if input_text:
-                result = process_text(input_text)
-            elif file and allowed_file(file.filename):
+            if file and allowed_file(file.filename):
                 file_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(file.filename))
                 file.save(file_path)
                 if file.filename.endswith('.pdf'):
                     text = extract_text_from_pdf(file_path)
                 else:
                     text = extract_text_from_txt(file_path)
-                result = process_text(text)
+                result = process_text(text, None)
+            elif input_text:
+                result = process_text(input_text, url)
             elif url:
                 pdf_path = download_pdf_from_url(url)
-                if "Error" not in pdf_path:
+                if pdf_path:
                     text = extract_text_from_pdf(pdf_path)
-                    result = process_text(text)
+                    result = process_text(text, url)
                 else:
-                    result = pdf_path
+                    arxiv_text = extract_arxiv_abstract(url)
+                    if arxiv_text:
+                        result = process_text(arxiv_text, url)
+                    else:
+                        error_message = "Failed to download PDF and fetch arXiv abstract due to network issues. Please upload the PDF manually."
             else:
                 error_message = "No valid input provided. Please enter text, upload a file, or provide a URL."
 
-            # Convert the resulting Markdown into HTML
-            if result:
-                result = markdown.markdown(result)
+            if result and "Error" not in result:
+                result = markdown.markdown(result, extensions=['nl2br', 'fenced_code', 'tables'])
 
         except Exception as e:
+            logger.error(f"Error in summary route: {str(e)}")
             error_message = f"An error occurred: {str(e)}"
+
+        return jsonify({
+            'summary': result,
+            'error': error_message
+        })
 
     return render_template('summarize.html', summary=result, error=error_message)
 

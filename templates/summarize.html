@@ -5,9 +5,21 @@
   <meta charset="utf-8">
   <meta content="width=device-width, initial-scale=1.0" name="viewport">
   <title>Abstractify - Summarize Your Research</title>
-  <script type="text/javascript" async src="https://cdn.jsdelivr.net/npm/mathjax@2/MathJax.js?config=TeX-MML-AM_CHTML"></script>
-  <meta name="description" content="">
-  <meta name="keywords" content="">
+  <script type="text/javascript" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <script>
+    MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']],
+        processEscapes: true
+      },
+      options: {
+        skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+    };
+  </script>
+  <meta name="description" content="Summarize research papers instantly with Abstractify. Upload a file or provide a URL to generate concise summaries.">
+  <meta name="keywords" content="research, summary, AI, academic, papers">
 
   <!-- Favicons -->
   <link href="static/img/logo.png" rel="icon">
@@ -30,121 +42,269 @@
   <!-- Main CSS File -->
   <link href="static/css/main.css" rel="stylesheet">
   <style>
-    /* Container for the summary result */
     .summary-result {
       margin-top: 30px;
       padding: 25px;
-      background:rgb(236, 234, 234);
+      background: #f8f9fa;
       border-radius: 10px;
       box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
       width: 100%;
-      max-width: 1000px; /* Prevents the result from becoming too wide on large screens */
+      max-width: 1000px;
       margin-left: auto;
-      margin-right: auto; /* Centers the result container */
+      margin-right: auto;
+      animation: fadeIn 0.5s ease-in;
     }
-  
-    /* Title style */
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
     .summary-result h3 {
-      margin-bottom: 20px;
+      font-family: 'Roboto', sans-serif;
       font-weight: 700;
-      color: #333;
-      font-size: 24px;
-      text-align: center;
-      text-transform: none;
+      color: #2c3e50;
+      font-size: 26px;
+      margin-bottom: 15px;
+      text-align: left;
     }
-  
-    /* Block for displaying the summarized text */
+
     .summary-block {
       padding: 20px;
-      background: #f8f9fa;
+      background: #ffffff;
       border-left: 5px solid #007bff;
       border-radius: 5px;
       font-family: 'Roboto', sans-serif;
       font-size: 18px;
       line-height: 1.6;
-      color:rgb(65, 68, 72);
-  
-      /* Ensures dynamic width based on parent container */
+      color: #414448;
       width: 100%;
-      box-sizing: border-box; /* Includes padding within width calculation */
-  
-      /* Allow vertical scrolling */
+      box-sizing: border-box;
       overflow-y: auto;
       overflow-x: hidden;
-  
-      /* Text wrapping rules */
-      white-space: pre-wrap; /* Ensures long lines wrap */
-      word-wrap: break-word; /* Breaks long words to avoid overflow */
-  
-      /* Dynamic height with max-height to ensure it grows, but doesn't exceed the viewport */
-      max-height: 80vh; /* This will allow the block to take up to 80% of the viewport height */
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      transition: max-height 0.5s ease-in-out, box-shadow 0.3s ease;
+      max-height: 400px;
+    }
 
-      text-transform: none;
+    .summary-block.expanded {
+      max-height: none;
     }
-  
-    /* Justifying the text */
+
     .summary-block p {
-      text-align: justify; /* Justifies the text within the block */
-      text-transform: none; 
+      text-align: justify;
     }
-  
-    /* Add responsiveness */
-    @media (max-width: 768px) {
-      .summary-result {
-        padding: 15px;
-      }
-  
-      .summary-result h3 {
-        font-size: 20px;
-      }
-  
-      .summary-block {
-        font-size: 16px;
-        padding: 10px;
-      }
+
+    .summary-block .keywords {
+      margin-top: 20px;
+      font-style: italic;
+      font-weight: 500;
+      color: #555;
+      font-size: 16px;
+      text-align: left;
     }
-  
-    /* Optional: Styling for links within the summary */
+
+    .summary-block .mjx-chtml {
+      display: block;
+      text-align: center;
+      margin: 10px 0;
+    }
+
+    .error-block {
+      border-left: 5px solid #dc3545;
+      background: #f8d7da;
+      color: #721c24;
+      font-weight: 500;
+    }
+
+    .placeholder-block {
+      border-left: 5px solid #6c757d;
+      background: #e9ecef;
+      color: #495057;
+      font-style: italic;
+    }
+
     .summary-block a {
       color: #007bff;
       text-decoration: none;
     }
-  
+
     .summary-block a:hover {
       text-decoration: underline;
     }
-  </style>
 
+    .toggle-button {
+      margin-top: 15px;
+      text-align: center;
+    }
+
+    .toggle-button a {
+      color: #007bff;
+      text-decoration: none;
+      font-weight: 500;
+      cursor: pointer;
+      transition: color 0.3s ease;
+    }
+
+    .toggle-button a:hover {
+      color: #0056b3;
+      text-decoration: underline;
+    }
+
+    #loading {
+      display: none;
+      text-align: center;
+      margin-top: 20px;
+      color: #007bff;
+      font-size: 18px;
+      font-family: 'Roboto', sans-serif;
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 5px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+
+    #loading i {
+      margin-right: 10px;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      100% { transform: rotate(360deg); }
+    }
+
+    #progress-container {
+      display: none;
+      margin-top: 15px;
+      max-width: 500px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    #progress-bar {
+      transition: width 0.3s ease;
+      background: linear-gradient(90deg, #007bff, #28a745);
+    }
+
+    #mathjax-error {
+      display: none;
+      margin-top: 15px;
+      font-size: 16px;
+      color: #dc3545;
+      font-family: 'Roboto', sans-serif;
+      text-align: center;
+      animation: fadeIn 0.5s ease-in;
+    }
+
+    .upload-container {
+      border: 2px dashed #007bff;
+      padding: 20px;
+      border-radius: 5px;
+      background: #f8f9fa;
+      transition: all 0.3s ease;
+    }
+
+    .upload-container.dragover {
+      border-color: #28a745;
+      background: #e6f4ea;
+      transform: scale(1.02);
+    }
+
+    .upload-container p {
+      margin-top: 10px;
+      font-size: 16px;
+      color: #555;
+    }
+
+    .upload-container .file-name {
+      margin-top: 10px;
+      font-weight: 500;
+      color: #2c3e50;
+    }
+
+    .btn-success {
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-success:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .btn-success:disabled {
+      opacity: 0.7;
+      transform: none;
+      cursor: not-allowed;
+    }
+
+    @media (max-width: 768px) {
+      .summary-result {
+        padding: 15px;
+      }
+
+      .summary-result h3 {
+        font-size: 22px;
+      }
+
+      .summary-block {
+        font-size: 16px;
+        padding: 15px;
+      }
+
+      .summary-block .keywords {
+        font-size: 14px;
+      }
+
+      .upload-container {
+        padding: 15px;
+      }
+
+      #loading {
+        font-size: 16px;
+        padding: 10px;
+      }
+
+      #progress-container {
+        max-width: 100%;
+      }
+    }
+  </style>
 </head>
 
 <body class="index-page">
-
   <header id="header" class="header d-flex align-items-center fixed-top">
     <div class="header-container container-fluid container-xl position-relative d-flex align-items-center justify-content-between">
       <a href="/" class="logo d-flex align-items-center me-auto me-xl-0">
-        <img src="static/img/large_icon.png" alt="Abstractify Logo" style="height: 50px;"> 
-        <h1 class="sitename"><b></b></h1>
+        <img src="static/img/large_icon.png" alt="Abstractify Logo" style="height: 50px;">
       </a>
       <a class="btn-getstarted" href="https://github.com/Firojpaudel/arXiv_Summarizer" target="_blank">
-        View code on &nbsp;<img src="static/img/github-logo.png" alt="GitHub Logo" style="height: 24px; vertical-align: middle;">
+        View code on <img src="static/img/github-logo.png" alt="GitHub Logo" style="height: 24px; vertical-align: middle;">
       </a>
     </div>
   </header>
 
   <main class="main">
-
-    <!-- Hero Section -->
     <section id="hero" class="hero d-flex align-items-center">
       <div class="container">
         <div class="row justify-content-center text-center">
           <div class="col-lg-8">
             <h1 class="mb-4">Summarize Research Papers Instantly</h1>
             <p class="mb-4">Upload a file or provide a URL to generate a concise summary of your research paper.</p>
-            <form action="/summary" method="POST" enctype="multipart/form-data" onsubmit="showSummarySection()">
+            <form action="/summary" method="POST" enctype="multipart/form-data" id="summary-form">
               <div class="wrapper">
                 <div class="container">
                   <h1>Upload a file</h1>
-                  <div class="upload-container">
+                  <div class="upload-container" id="upload-container">
                     <div class="border-container">
                       <div class="icons fa-4x">
                         <i class="fas fa-file-image"></i>
@@ -152,9 +312,9 @@
                         <i class="fas fa-file-pdf"></i>
                       </div>
                     </div>
-                    <input type="file" id="file-upload" style="display: none;" accept=".txt,.pdf" name="file">
-                    <p>Drag and drop files here, or 
-                      <a href="#" id="file-browser">browse</a> your computer.</p>
+                    <input type="file" id="file-upload" aria-label="Upload a text or PDF file" style="display: none;" accept=".txt,.pdf" name="file">
+                    <p>Drag and drop files here, or <a href="#" id="file-browser">browse</a> your computer.</p>
+                    <p class="file-name" id="file-name"></p>
                   </div>
                 </div>
               </div>
@@ -165,71 +325,36 @@
                 <textarea name="text" class="form-control" rows="5" placeholder="Enter text here..."></textarea>
               </div>
               <div class="mt-4">
-                <button type="submit" class="btn btn-success">
+                <button type="submit" class="btn btn-success" id="submit-button">
                   Generate Summary
                 </button>
               </div>
             </form>
-            {% if summary %}
-            <div id="summary" class="summary-result">
-              <h3>Summary:</h3>
-              <div class="summary-block">
-                <!-- Render the summary with safe HTML -->
-                {{ summary | safe }}
+            <div id="loading">
+              <i class="fas fa-spinner"></i> Generating summary, please wait...
+            </div>
+            <div id="progress-container">
+              <div class="progress">
+                <div id="progress-bar" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
               </div>
             </div>
-          {% elif error %}
-            <div class="summary-result">
-              <h3>Error:</h3>
-              <div class="summary-block" style="color: red;">
-                <p>{{ error }}</p>
-              </div>
+            <div id="mathjax-error">
+              Failed to render mathematical equations. Please try reloading the page.
             </div>
-          {% else %}
-            <div class="summary-result">
-              <h3>No Summary Yet:</h3>
-              <div class="summary-block">
-                <p>Please upload a document, paste a URL, or provide text to generate a summary.</p>
-              </div>
-            </div>
-          {% endif %}
+            <div id="output-container"></div>
           </div>
         </div>
       </div>
-
-      <script>
-        document.addEventListener("DOMContentLoaded", function () {
-          const fileUpload = document.getElementById("file-upload");
-          const fileBrowser = document.getElementById("file-browser");
-
-          fileBrowser.addEventListener("click", function (e) {
-            e.preventDefault();
-            fileUpload.click();
-          });
-
-          // Auto-scroll to summary
-          if (document.getElementById("summary")) {
-            document.getElementById("summary").scrollIntoView({ behavior: "smooth" });
-          }
-        });
-
-        function showSummarySection() {
-          setTimeout(() => {
-            document.getElementById("summary").scrollIntoView({ behavior: "smooth" });
-          }, 500);
-        }
-      </script>
     </section>
   </main>
 
   <footer id="footer" class="footer">
-
     <div class="container footer-top">
       <div class="row gy-4">
-        <div class="footer-links">
+        <div class="col-lg-8 footer-links">
           <h4>About the project:</h4>
           <p>
-            As someone with a strong interest in research, I often found myself struggling to keep up with the sheer volume of academic papers. Abstractify was created to address this challenge. By leveraging arXiv datasets and fine-tuning a language model, this project aims to generate concise summaries, making it easier to quickly understand the key findings of research. It's a learning project, but who knows—it might be useful to others facing the same issue.
+            As someone with a strong interest in research, I often found myself struggling to keep up with the sheer volume of academic papers. Abstractify was created to address this challenge. By leveraging advanced AI, this project aims to generate concise summaries, making it easier to quickly understand the key findings of research. It's a learning project, but who knows—it might be useful to others facing the same issue.
           </p>
         </div>
         <div class="col-lg-4 col-md-6 footer-about">
@@ -248,15 +373,12 @@
             <a href=""><i class="bi bi-linkedin"></i></a>
           </div>
         </div>
-
-
       </div>
     </div>
 
     <div class="container copyright text-center mt-4">
       <p>© <span>Copyright</span> <strong class="px-1 sitename">Abstractify™</strong> <span>All Rights Reserved</span></p>
     </div>
-
   </footer>
 
   <!-- Scroll Top -->
@@ -271,6 +393,203 @@
 
   <!-- Main JS File -->
   <script src="static/js/main.js"></script>
+
+  <!-- Custom JavaScript -->
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const fileUpload = document.getElementById("file-upload");
+      const fileBrowser = document.getElementById("file-browser");
+      const uploadContainer = document.getElementById("upload-container");
+      const fileNameDisplay = document.getElementById("file-name");
+      const form = document.getElementById("summary-form");
+      const submitButton = document.getElementById("submit-button");
+      const loading = document.getElementById("loading");
+      const progressContainer = document.getElementById("progress-container");
+      const progressBar = document.getElementById("progress-bar");
+      const urlInput = document.getElementById("urlInputHero");
+      const mathjaxError = document.getElementById("mathjax-error");
+      const outputContainer = document.getElementById("output-container");
+
+      // Progress bar animation
+      function startProgress() {
+        progressContainer.style.display = "block";
+        let progress = 0;
+        const maxDuration = 10000;
+        const increment = 100 / (maxDuration / 100);
+        progressBar.style.width = "0%";
+        progressBar.setAttribute("aria-valuenow", "0");
+
+        const progressInterval = setInterval(() => {
+          progress += increment;
+          if (progress >= 100) {
+            progress = 100;
+            clearInterval(progressInterval);
+          }
+          progressBar.style.width = `${progress}%`;
+          progressBar.setAttribute("aria-valuenow", Math.round(progress));
+        }, 100);
+
+        return progressInterval;
+      }
+
+      // Reset UI
+      function resetUI() {
+        loading.style.display = "none";
+        progressContainer.style.display = "none";
+        submitButton.disabled = false;
+        submitButton.textContent = "Generate Summary";
+        // Clear previous output
+        const existingSummary = document.getElementById("summary");
+        const existingError = document.getElementById("error");
+        const existingNoSummary = document.getElementById("no-summary");
+        if (existingSummary) existingSummary.remove();
+        if (existingError) existingError.remove();
+        if (existingNoSummary) existingNoSummary.remove();
+      }
+
+      // Display result
+      function displayResult(data) {
+        resetUI();
+        const div = document.createElement("div");
+        if (data.summary) {
+          div.id = "summary";
+          div.className = "summary-result";
+          div.innerHTML = '<h3>Summary:</h3><div class="summary-block" id="summary-block"></div><div class="toggle-button" id="toggle-button"><a onclick="toggleSummary()" aria-label="Toggle summary visibility">Show More</a></div>';
+          outputContainer.appendChild(div);
+          const summaryBlock = document.getElementById("summary-block");
+          summaryBlock.innerHTML = data.summary;
+          if (typeof MathJax !== 'undefined') {
+            MathJax.typesetPromise(["#summary-block"]).then(() => {
+              mathjaxError.style.display = "none";
+            }).catch((err) => {
+              console.error('MathJax typesetting failed: ', err);
+              mathjaxError.style.display = "block";
+            });
+          }
+          // Check if toggle button is needed
+          if (summaryBlock.scrollHeight > 400) {
+            summaryBlock.classList.add("collapsed");
+            document.getElementById("toggle-button").style.display = "block";
+          } else {
+            document.getElementById("toggle-button").style.display = "none";
+          }
+        } else if (data.error) {
+          div.id = "error";
+          div.className = "summary-result";
+          div.innerHTML = '<h3>Error:</h3><div class="summary-block error-block"><p></p></div>';
+          outputContainer.appendChild(div);
+          div.querySelector("p").textContent = data.error;
+        } else {
+          div.id = "no-summary";
+          div.className = "summary-result";
+          div.innerHTML = '<h3>No Summary Available:</h3><div class="summary-block placeholder-block"><p>Please upload a document, paste a URL, or provide text to generate a summary.</p></div>';
+          outputContainer.appendChild(div);
+        }
+        div.scrollIntoView({ behavior: "smooth" });
+      }
+
+      // Drag-and-drop functionality
+      uploadContainer.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        uploadContainer.classList.add("dragover");
+      });
+
+      uploadContainer.addEventListener("dragleave", () => {
+        uploadContainer.classList.remove("dragover");
+      });
+
+      uploadContainer.addEventListener("drop", (e) => {
+        e.preventDefault();
+        uploadContainer.classList.remove("dragover");
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+          const file = files[0];
+          if (['application/pdf', 'text/plain'].includes(file.type)) {
+            fileUpload.files = files;
+            fileNameDisplay.textContent = `Selected file: ${file.name}`;
+          } else {
+            alert('Please upload a .txt or .pdf file.');
+            fileNameDisplay.textContent = '';
+          }
+        }
+      });
+
+      fileBrowser.addEventListener("click", (e) => {
+        e.preventDefault();
+        fileUpload.click();
+      });
+
+      fileUpload.addEventListener("change", () => {
+        const file = fileUpload.files[0];
+        if (file) {
+          if (['application/pdf', 'text/plain'].includes(file.type)) {
+            fileNameDisplay.textContent = `Selected file: ${file.name}`;
+          } else {
+            alert('Please upload a .txt or .pdf file.');
+            fileUpload.value = '';
+            fileNameDisplay.textContent = '';
+          }
+        }
+      });
+
+      // Form submission and loading animation
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const file = fileUpload.files[0];
+        const url = urlInput.value;
+        const text = form.querySelector("textarea").value;
+        if (!file && !url && !text) {
+          displayResult({ error: "Please upload a file, provide a URL, or enter text." });
+          return;
+        }
+        loading.style.display = "block";
+        submitButton.disabled = true;
+        submitButton.textContent = "Processing...";
+        const progressInterval = startProgress();
+
+        const formData = new FormData(form);
+        fetch("/summary", {
+          method: "POST",
+          body: formData
+        })
+          .then(response => response.json())
+          .then(data => {
+            clearInterval(progressInterval);
+            resetUI();
+            displayResult(data);
+            fileNameDisplay.textContent = '';
+            form.reset();
+          })
+          .catch(error => {
+            clearInterval(progressInterval);
+            resetUI();
+            displayResult({ error: `Error: ${error.message}` });
+            fileNameDisplay.textContent = '';
+            form.reset();
+          });
+      });
+
+      // Reset loading state on page load
+      window.addEventListener("load", () => {
+        resetUI();
+      });
+
+      // Toggle summary visibility
+      window.toggleSummary = function() {
+        const summaryBlock = document.getElementById("summary-block");
+        const toggleButton = document.getElementById("toggle-button");
+        if (summaryBlock.classList.contains("collapsed")) {
+          summaryBlock.classList.remove("collapsed");
+          summaryBlock.classList.add("expanded");
+          toggleButton.innerHTML = '<a onclick="toggleSummary()" aria-label="Toggle summary visibility">Show Less</a>';
+        } else {
+          summaryBlock.classList.remove("expanded");
+          summaryBlock.classList.add("collapsed");
+          toggleButton.innerHTML = '<a onclick="toggleSummary()" aria-label="Toggle summary visibility">Show More</a>';
+        }
+      };
+    });
+  </script>
 </body>
 
 </html>
