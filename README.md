@@ -76,14 +76,62 @@ Here’s a quick preview of the app in action:
 
 <ul>
   A clear, concise summary is generated for your research paper, formatted beautifully in markdown for readability.<br><br>
-  <img src="./README_images/Summary_generated.jpg" alt="Generated Summary" height="auto" width="100%">
+  <img src="./README_images/Summary_generated.png" alt="Generated Summary" height="auto" width="100%">
 </ul>
 
 ---
+
+## 🚀 What's New in This Version
+
+- **Switched to Gemini 2.0 Flash:**  
+  Thanks to generous token limits from Google, this version uses the Gemini 2.0 Flash model for summarization. This provides much faster and more consistent results compared to the previous BART-based approach.  
+  > _BART was slow and inconsistent, even after fine-tuning. Gemini delivers better quality and speed for research paper summaries._
+
+- **Summary History with Database:**  
+  Every generated summary is now saved in a local SQLite database (`history.db`). You can view your entire summarization history from the web interface.  
+  - See the new [`db.py`](db.py) file for the SQLAlchemy model and setup.
+  - Summaries are stored with timestamps and (optionally) the original paper URL.
+
+- **Proper LaTeX Equation Rendering:**  
+  Summaries now preserve and render LaTeX equations beautifully, making mathematical content readable and clear.
+
+- **Future Plans:**  
+  - Experiment with fine-tuning larger models for local, faster, and more accurate summarization.
+  - Explore GPU acceleration and more advanced model serving.
+
+---
+
+**🕑 Summary History:**
+
+<ul>
+  Every summary you generate is saved and can be revisited at any time!<br><br>
+  <img src="./README_images/Summary_history.png" alt="Summary History Screenshot" height="auto" width="100%">
+</ul>
+
+---
+
+## 📦 Database Model
+
+See [`db.py`](db.py):
+
+```python
+class SummaryHistory(Base):
+    __tablename__ = 'summary_history'
+    id = Column(Integer, primary_key=True)
+    summary = Column(Text, nullable=False)
+    original_url = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+```
+
+---
 ## 🧠 Learnings & Challenges
-- While BART works well for summarization, certain outputs lacked consistency due to variations in paper formats.
-- The project demonstrated the limitations of fine-tuning on older datasets with diverse formatting styles.
-- Future iterations could use a hybrid approach or train on more specialized datasets for better results.
+- **BART Limitations:** While BART worked for basic summarization, outputs were often inconsistent and slow, especially with diverse paper formats. Even after fine-tuning, it struggled with speed and quality.
+- **Why Gemini 2.0 Flash:** Switched to Gemini 2.0 Flash for this version due to its speed, reliability, and generous token limits. It provides much better results for research paper summarization.
+- **LaTeX Rendering:** Properly rendering LaTeX equations in summaries was a major challenge, but is now a highlight of this version.
+- **Database Integration:** Added summary history with a persistent SQLite database, making it easy to revisit past summaries.
+- **Future Directions:**
+  - Plan to experiment with fine-tuning larger models and running local LLMs (e.g., using GRPO on larger parameter models) to improve reasoning and performance.
+  - Explore local GPU acceleration and more advanced model serving for even faster and more accurate results.
 
 ---
 ## 📂 Repository Structure
@@ -91,12 +139,15 @@ Here’s a quick preview of the app in action:
 ```plaintext
 arXiv_Summarizer/  
 │  
-├── app.py                   # Main Flask app  
-├── fine_tuned_bart/         # Directory to store the fine_tuned_bart model (needed to be downloaded from drive) 
-├── templates/               # HTML templates for the app  
-├── static/                  # Static files (CSS, JS, images)  
-├── README_images/           # Directory for README images  
-├── requirements.txt         # Dependencies  
+├── app.py                   # Main Flask app (Gemini 2.0 Flash, summary logic, history)
+├── db.py                    # SQLAlchemy models and database setup (summary history)
+├── fine_tuned_bart/         # (Legacy) Directory for the fine-tuned BART model
+├── t5-base/                 # (Legacy) Directory for T5 base model
+├── templates/               # HTML templates (summarize.html, history.html, etc.)
+├── static/                  # Static files (CSS, JS, images)
+├── README_images/           # Images for README screenshots
+├── requirements.txt         # Python dependencies
+├── history.db               # SQLite database for summary history
 └── README.md                # Project documentation (this file)    
 ```
 ---

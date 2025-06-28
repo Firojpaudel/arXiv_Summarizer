@@ -4,6 +4,22 @@
   <meta charset="utf-8">
   <meta content="width=device-width, initial-scale=1.0" name="viewport">
   <title>Summary History - Abstractify</title>
+  <!-- MathJax for LaTeX rendering -->
+  <script type="text/javascript" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <script>
+    MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']],
+        processEscapes: true,
+        processEnvironments: true
+      },
+      options: {
+        skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+        ignoreHtmlClass: 'tex2jax_ignore'
+      }
+    };
+  </script>
   <!-- (reuse all CSS, JS, and meta from summarize.html) -->
   <link href="static/img/logo.png" rel="icon">
   <link href="static/img/logo.png" rel="apple-touch-icon">
@@ -16,6 +32,55 @@
   <link href="static/vendor/glightbox/css/glightbox.min.css" rel="stylesheet">
   <link href="static/vendor/swiper/swiper-bundle.min.css" rel="stylesheet">
   <link href="static/css/main.css" rel="stylesheet">
+  <style>
+    .summary-result {
+      margin-top: 30px;
+      padding: 25px;
+      background: #f8f9fa;
+      border-radius: 10px;
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+      width: 100%;
+      max-width: 1000px;
+      margin-left: auto;
+      margin-right: auto;
+      animation: fadeIn 0.5s ease-in;
+    }
+    .summary-block {
+      padding: 20px;
+      background: #ffffff;
+      border-left: 5px solid #007bff;
+      border-radius: 5px;
+      font-family: 'Roboto', sans-serif;
+      font-size: 18px;
+      line-height: 1.6;
+      color: #414448;
+      width: 100%;
+      box-sizing: border-box;
+      overflow-y: auto;
+      overflow-x: hidden;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      transition: max-height 0.5s ease-in-out, box-shadow 0.3s ease;
+      max-height: 400px;
+    }
+    .summary-block p {
+      text-align: justify;
+    }
+    .summary-block .mjx-chtml {
+      display: block;
+      text-align: center;
+      margin: 10px 0;
+    }
+    @media (max-width: 768px) {
+      .summary-result {
+        padding: 15px;
+      }
+      .summary-block {
+        font-size: 16px;
+        padding: 15px;
+      }
+    }
+  </style>
 </head>
 <body class="index-page">
   <header id="header" class="header d-flex align-items-center fixed-top">
@@ -23,9 +88,14 @@
       <a href="/" class="logo d-flex align-items-center me-auto me-xl-0">
         <img src="static/img/large_icon.png" alt="Abstractify Logo" style="height: 50px;">
       </a>
-      <a class="btn-getstarted" href="https://github.com/Firojpaudel/arXiv_Summarizer" target="_blank">
-        View code on <img src="static/img/github-logo.png" alt="GitHub Logo" style="height: 24px; vertical-align: middle;">
-      </a>
+      <div>
+        <a class="btn-getstarted" href="https://github.com/Firojpaudel/arXiv_Summarizer" target="_blank">
+          View code on <img src="static/img/github-logo.png" alt="GitHub Logo" style="height: 24px; vertical-align: middle;">
+        </a>
+        <a class="btn-getstarted" href="/summary" style="margin-left: 10px; background-color: #198754; color: white;">
+        <i class="bi bi-file-earmark-text"></i> &nbsp; Summarize More
+        </a>
+      </div>
     </div>
   </header>
   <main class="main" style="padding-top: 100px;">
