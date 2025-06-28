@@ -3,3 +3,8 @@ t5-base
 temp.pdf
 uploads
 .env
+
+*.db
+
+
+__pycache__

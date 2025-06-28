@@ -13,6 +13,7 @@ from dotenv import load_dotenv
 from pydantic import BaseModel, Field, ValidationError
 import arxiv
 import PyPDF2
+from db import Session, SummaryHistory
 
 # Load environment variables
 load_dotenv()
@@ -369,6 +370,13 @@ def fallback_summarize_text(text):
         logger.error(f"Fallback summarization failed: {str(e)}")
         return f"Error summarizing with Gemini: {str(e)}"
 
+def save_summary_history(summary, url=None):
+    session = Session()
+    record = SummaryHistory(summary=summary, original_url=url)
+    session.add(record)
+    session.commit()
+    session.close()
+
 def process_text(text, url=None):
     """Process text through cleaning and Gemini summarization."""
     cleaned_text = clean_text(text)
@@ -423,6 +431,7 @@ def summary():
 
             if result and "Error" not in result:
                 result = markdown.markdown(result, extensions=['nl2br', 'fenced_code', 'tables'])
+                save_summary_history(result, url)
 
         except Exception as e:
             logger.error(f"Error in summary route: {str(e)}")
@@ -434,6 +443,13 @@ def summary():
         })
 
     return render_template('summarize.html', summary=result, error=error_message)
+
+@app.route('/history')
+def history():
+    session = Session()
+    records = session.query(SummaryHistory).order_by(SummaryHistory.created_at.desc()).all()
+    session.close()
+    return render_template('history.html', histories=records)
 
 if __name__ == '__main__':
     app.run(debug=True)
