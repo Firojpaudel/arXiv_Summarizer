@@ -1,119 +1,181 @@
 # arXiv Summarizer: _Project Abstractify_<img src="static/img/large_icon.png" alt="Project Logo" width="95"/>
 
-This is a Flask app that uses a fine-tuned BART model (trained on arXiv datasets) to summarize research papers. The goal was to create a simple, easy-to-use tool for researchers to get concise summaries of lengthy papers.
+This is a Flask app that uses AI-powered summarization to help researchers quickly understand complex academic papers. The application now includes **user authentication** and **personalized history** features, making it easier to manage and revisit your research summaries.
+
+---
+
+## 🆕 **New Features: User Authentication & Personal History**
+
+### **🔐 Sign In with Google**
+- **Google OAuth**: Sign in with your Google account for seamless access
+- **Guest Mode**: Continue using the app without signing in (limited features)
+
+### **👤 Personalized Experience**
+- **Personal History**: Your summaries are saved and synced to your account
+- **Cross-Device Access**: Access your summaries from any device
+- **Secure Storage**: Your data is safely stored and associated with your account
 
 ---
 
 ## Project Status  
-The project is **completed**! Here's what it includes:  
-1. A functional Flask app to upload research papers and generate summaries.  
-2. A fallback mechanism that formats outputs via a T5 base model for improved readability.  
+The project includes:  
+1. **✅ AI-Powered Summarization**: Generate concise summaries of research papers
+2. **✅ User Authentication**: Google OAuth integration  
+3. **✅ Personal History**: Save and sync summaries across devices
+4. **✅ LaTeX Support**: Beautiful rendering of mathematical equations
+5. **✅ Modern UI**: Clean, responsive design with authentication features
 
 ---
 
 ## 🛠️ Setup Instructions  
 
 ### Requirements  
-- Python 3.8 or above.  
-- Virtual environment tools like `conda` or `venv` are highly recommended.  
+- Python 3.8 or above  
+- Virtual environment tools like `conda` or `venv` (recommended)
+- Google/Apple OAuth credentials (for authentication features)
 
 ### Steps to Run the Project  
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/Firojpaudel/arXiv_Summarizer.git
-   cd arXiv_Summarizer
-   ```
-2. **Set up a virtual environment** *(recommended)*:
 
-    Using `conda`:
-    ```bash
-    conda create -n arxiv_summarizer python=3.10  
-    conda activate arxiv_summarizer  
-    ```
-    Or using `venv`:
-    ```bash
-    python -m venv venv  
-    source venv/bin/activate (Linux/Mac)  
-    venv\Scripts\activate (Windows)
-    ```
-3. **Install dependencies:**
+#### 1. **Clone the repository:**
+```bash
+git clone https://github.com/Firojpaudel/arXiv_Summarizer.git
+cd arXiv_Summarizer
+```
 
-    ```bash
-    pip install -r requirements.txt
-    ```
-4. **Download the fine_tuned_bart model:**
+#### 2. **Set up a virtual environment** *(recommended)*:
 
-    The model is not included here due to its size. Please download it from the following link and place it inside the directory:
+Using `conda`:
+```bash
+conda create -n arxiv_summarizer python=3.10  
+conda activate arxiv_summarizer  
+```
+Or using `venv`:
+```bash
+python -m venv venv  
+source venv/bin/activate  # Linux/Mac
+venv\Scripts\activate     # Windows
+```
 
-    [Download Model](https://drive.google.com/drive/u/2/folders/17bDdytEe0sLysZ-x2g0K4Rtyi1YhOw2p)
-5. **Run the app:**
+#### 3. **Install dependencies:**
+```bash
+pip install -r requirements.txt
+```
 
-    ```bash
-    python app.py
-    ```
-    The app will be hosted locally at `http://127.0.0.1:5000/`
+#### 4. **Configure Environment Variables:**
+
+Copy the example environment file and configure your settings:
+```bash
+cp .env.example .env
+```
+
+Edit `.env` file with your credentials:
+```env
+# Required: Gemini API for summarization
+GEMINI_API_KEY=your_gemini_api_key_here
+
+# Required: Secret key for sessions
+SECRET_KEY=your_secret_key_here
+
+# Optional: Google OAuth (for Google sign-in)
+GOOGLE_CLIENT_ID=your_google_client_id_here
+GOOGLE_CLIENT_SECRET=your_google_client_secret_here
+```
+
+#### 5. **OAuth Setup (Optional but Recommended):**
+
+**For Google OAuth:**
+1. Go to [Google Cloud Console](https://console.developers.google.com/)
+2. Create a new project or select existing one
+3. Enable Google+ API
+4. Create OAuth 2.0 credentials
+5. Add authorized origins: `http://localhost:5000`
+6. Add redirect URI: `http://localhost:5000/auth/google/callback`
+
+#### 6. **Run the app:**
+```bash
+python app.py
+```
+The app will be hosted locally at `http://127.0.0.1:5000/`
 
 ---
+
 ## 🖼️ **How It Looks**
 
-Here’s a quick preview of the app in action:
+### 🏠 **Homepage with Authentication:**
+The homepage now welcomes users and provides easy access to sign-in options.
 
-🏠 **Homepage:** 
+<img src="./README_images/Homepage.png" alt="Homepage with Authentication" height="auto" width="100%">
 
-<ul>
-  This is where it all starts! Upload your research paper and get started.<br><br>
-  <img src="./README_images/Homepage.png" alt="Homepage image" height="auto" width="100%">
-</ul>
+### 🔐 **Sign In Page:**
+Beautiful, secure sign-in page with Google OAuth.
 
-**📝 Summarization in Action:**
+### **📝 Summarization with User Context:**
+Personalized experience with user information and saved history.
 
-<ul>
-  Once your paper is uploaded, the app gets to work, breaking down complex research into digestible summaries.<br><br>
-  <img src="./README_images/Summarize.png" alt="Summarization in Action" height="auto" width="100%">
-</ul>
+<img src="./README_images/Summarize.png" alt="Summarization with User Context" height="auto" width="100%">
 
-**📄 Final Summary Output**
+### **📄 Generated Summary:**
+Clean, formatted summaries with LaTeX equation support.
 
-<ul>
-  A clear, concise summary is generated for your research paper, formatted beautifully in markdown for readability.<br><br>
-  <img src="./README_images/Summary_generated.png" alt="Generated Summary" height="auto" width="100%">
-</ul>
+<img src="./README_images/Summary_generated.png" alt="Generated Summary" height="auto" width="100%">
+
+### **🕑 Personal Summary History:**
+Your personal collection of summaries, accessible anytime.
+
+<img src="./README_images/Summary_history.png" alt="Personal Summary History" height="auto" width="100%">
 
 ---
 
 ## 🚀 What's New in This Version
 
-- **Switched to Gemini 2.0 Flash:**  
-  Thanks to generous token limits from Google, this version uses the Gemini 2.0 Flash model for summarization. This provides much faster and more consistent results compared to the previous BART-based approach.  
-  > _BART was slow and inconsistent, even after fine-tuning. Gemini delivers better quality and speed for research paper summaries._
+### **🔐 Authentication System**
+- **OAuth Integration**: Seamless sign-in with Google
+- **Session Management**: Secure user sessions with Flask-Session
+- **User Profiles**: Store user information and preferences
+- **Guest Mode**: Full functionality available without signing in
 
-- **Summary History with Database:**  
-  Every generated summary is now saved in a local SQLite database (`history.db`). You can view your entire summarization history from the web interface.  
-  - See the new [`db.py`](db.py) file for the SQLAlchemy model and setup.
-  - Summaries are stored with timestamps and (optionally) the original paper URL.
+### **👤 User Management**
+- **Personal History**: Summaries are linked to user accounts
+- **Cross-Device Sync**: Access your summaries from anywhere
+- **User Dashboard**: Manage your account and view statistics
 
-- **Proper LaTeX Equation Rendering:**  
-  Summaries now preserve and render LaTeX equations beautifully, making mathematical content readable and clear.
+### **🎨 Enhanced UI**
+- **Modern Authentication UI**: Beautiful login page with Google sign-in
+- **User Dropdowns**: Access user features from any page
+- **Responsive Design**: Works perfectly on all devices
+- **Flash Messages**: Clear feedback for user actions
 
-- **Future Plans:**  
-  - Experiment with fine-tuning larger models for local, faster, and more accurate summarization.
-  - Explore GPU acceleration and more advanced model serving.
+### **🛡️ Security Features**
+- **Secure Sessions**: Encrypted session management
+- **OAuth 2.0**: Industry-standard authentication
+- **Privacy-First**: Optional sign-in with guest mode available
+
+### **📊 Database Enhancements**
+- **User Management**: Store user profiles and authentication data
+- **Relationship Mapping**: Link summaries to specific users
+- **Migration Support**: Backward compatibility with existing data
 
 ---
 
-**🕑 Summary History:**
+## 📦 Database Models
 
-<ul>
-  Every summary you generate is saved and can be revisited at any time!<br><br>
-  <img src="./README_images/Summary_history.png" alt="Summary History Screenshot" height="auto" width="100%">
-</ul>
+### User Model
+```python
+class User(Base):
+    __tablename__ = 'users'
+    id = Column(Integer, primary_key=True)
+    email = Column(String(255), unique=True, nullable=False)
+    name = Column(String(255), nullable=False)
+    provider = Column(String(50), nullable=False, default='google')  # Only 'google' now
+    provider_id = Column(String(255), nullable=False)
+    avatar_url = Column(String(500), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    last_login = Column(DateTime, default=datetime.utcnow)
+    
+    summaries = relationship("SummaryHistory", back_populates="user")
+```
 
----
-
-## 📦 Database Model
-
-See [`db.py`](db.py):
-
+### Enhanced Summary Model
 ```python
 class SummaryHistory(Base):
     __tablename__ = 'summary_history'
@@ -121,60 +183,162 @@ class SummaryHistory(Base):
     summary = Column(Text, nullable=False)
     original_url = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=True)
+    
+    user = relationship("User", back_populates="summaries")
 ```
 
 ---
-## 🧠 Learnings & Challenges
-- **BART Limitations:** While BART worked for basic summarization, outputs were often inconsistent and slow, especially with diverse paper formats. Even after fine-tuning, it struggled with speed and quality.
-- **Why Gemini 2.0 Flash:** Switched to Gemini 2.0 Flash for this version due to its speed, reliability, and generous token limits. It provides much better results for research paper summarization.
-- **LaTeX Rendering:** Properly rendering LaTeX equations in summaries was a major challenge, but is now a highlight of this version.
-- **Database Integration:** Added summary history with a persistent SQLite database, making it easy to revisit past summaries.
-- **Future Directions:**
-  - Plan to experiment with fine-tuning larger models and running local LLMs (e.g., using GRPO on larger parameter models) to improve reasoning and performance.
-  - Explore local GPU acceleration and more advanced model serving for even faster and more accurate results.
+
+## 🧪 **Features & Benefits**
+
+### **For Researchers**
+- **Quick Summaries**: Get the gist of papers in seconds
+- **Personal Library**: Build your collection of research summaries
+- **LaTeX Support**: Properly rendered mathematical equations
+- **Cross-Platform**: Access from any device with your account
+
+### **For Institutions**
+- **User Management**: Track usage and provide personalized experiences
+- **OAuth Integration**: Leverage existing Google accounts
+- **Scalable**: Designed to handle multiple users efficiently
+
+### **For Developers**
+- **Modern Auth Stack**: OAuth 2.0 with popular providers
+- **Clean Architecture**: Separated authentication and business logic
+- **Extensible**: Easy to add new OAuth providers or features
 
 ---
+
+## 🔧 **Technical Stack**
+
+### **Backend**
+- **Flask**: Python web framework
+- **SQLAlchemy**: Database ORM with user relationships
+- **Authlib**: OAuth 2.0 client implementation
+- **Flask-Session**: Secure session management
+
+### **Authentication**
+- **Google OAuth 2.0**: Sign in with Google
+- **Session Security**: Encrypted cookies and secure storage
+
+### **Frontend**
+- **Bootstrap 5**: Modern, responsive UI components
+- **Custom CSS**: Beautiful authentication interfaces
+- **JavaScript**: Interactive elements and OAuth flows
+
+### **AI & Processing**
+- **Google Gemini 2.0 Flash**: AI-powered summarization
+- **LaTeX Rendering**: MathJax for mathematical equations
+- **Markdown Processing**: Rich text formatting
+
+---
+
+## 🚦 **Usage Modes**
+
+### **Guest Mode** (No Sign-In Required)
+- ✅ Generate summaries
+- ✅ View current session summary
+- ❌ Save summary history
+- ❌ Cross-device access
+
+### **Authenticated Mode** (With Sign-In)
+- ✅ Generate summaries
+- ✅ Save personal history
+- ✅ Cross-device synchronization
+- ✅ Personalized experience
+- ✅ Future premium features
+
+---
+
+## 🔐 **Privacy & Security**
+
+- **OAuth 2.0**: Industry-standard authentication
+- **No Password Storage**: Rely on trusted OAuth providers
+- **Encrypted Sessions**: Secure session management
+- **Data Privacy**: User data is only stored with consent
+- **Guest Option**: Full functionality without account creation
+
+---
+
 ## 📂 Repository Structure
 
 ```plaintext
 arXiv_Summarizer/  
 │  
-├── app.py                   # Main Flask app (Gemini 2.0 Flash, summary logic, history)
-├── db.py                    # SQLAlchemy models and database setup (summary history)
-├── fine_tuned_bart/         # (Legacy) Directory for the fine-tuned BART model
-├── t5-base/                 # (Legacy) Directory for T5 base model
-├── templates/               # HTML templates (summarize.html, history.html, etc.)
+├── app.py                   # Main Flask app with authentication
+├── auth.py                  # Authentication manager and OAuth setup
+├── db.py                    # SQLAlchemy models (Users, Summaries)
+├── .env.example             # Environment variables template
+├── templates/               # HTML templates
+│   ├── index.html          #   Homepage with auth UI
+│   ├── login.html          #   Sign-in page
+│   ├── summarize.html      #   Summarization with user context
+│   └── history.html        #   Personal history page
 ├── static/                  # Static files (CSS, JS, images)
-├── README_images/           # Images for README screenshots
-├── requirements.txt         # Python dependencies
-├── history.db               # SQLite database for summary history
-└── README.md                # Project documentation (this file)    
+├── README_images/           # Screenshots for documentation
+├── requirements.txt         # Python dependencies (updated)
+├── history.db              # SQLite database (users + summaries)
+└── README.md               # This documentation
 ```
+
 ---
-## 🤝 Contributions & License
 
-This project is licensed under the MIT License. Feel free to use, modify, and distribute it as per the license terms.
+## 🤝 Contributing
 
-### How You Can Contribute
+We welcome contributions! Here are some areas where you can help:
 
-We welcome all contributors who want to add value to this project! Whether it's improving summarization quality, refining the interface, or optimizing performance, your contribution matters.
+### **🔐 Authentication Enhancements**
+- Add more OAuth providers (GitHub, Microsoft, etc.)
+- Implement two-factor authentication
+- Add user profile management
 
-To contribute, follow these steps:
+### **📊 Feature Additions**
+- Export summaries to PDF/Word
+- Summary sharing and collaboration
+- Advanced search and filtering
 
-1. **Fork the repository.**
+### **🎨 UI/UX Improvements**
+- Dark mode support
+- Mobile app development
+- Accessibility enhancements
 
+### **⚡ Performance**
+- Caching mechanisms
+- Background processing
+- API rate limiting
+
+### **How to Contribute**
+
+1. **Fork the repository**
 2. **Create your feature branch:**
    ```bash
-   git checkout -b feature-name
+   git checkout -b feature/amazing-feature
    ```
 3. **Commit your changes:**
-    ```bash
-    git commit -m "Added a cool new feature"
-    ```
+   ```bash
+   git commit -m "Add amazing feature"
+   ```
 4. **Push to the branch:**
-    ```bash
-    git push origin feature-name
-    ```
-5. **Open a pull request.**
+   ```bash
+   git push origin feature/amazing-feature
+   ```
+5. **Open a Pull Request**
 
 ---
+
+## 📄 **License**
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+---
+
+## 🙏 **Acknowledgments**
+
+- **Google Gemini**: For powerful AI summarization capabilities
+- **OAuth Providers**: Google for secure authentication
+- **Open Source Community**: For the amazing libraries and tools
+- **Researchers**: Who inspired this tool to make research more accessible
+
+---
+
+**Ready to revolutionize your research workflow? Sign in and start summarizing! 🚀**

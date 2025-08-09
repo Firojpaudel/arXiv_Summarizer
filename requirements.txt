@@ -7,3 +7,14 @@ torch
 nltk
 markdown
 Gunicorn
+flask-session
+authlib
+google-auth
+google-auth-oauthlib
+google-auth-httplib2
+PyPDF2
+python-dotenv
+google-generativeai
+sqlalchemy
+arxiv
+backoff

@@ -6,5 +6,6 @@ uploads
 
 *.db
 
+flask_session
 
 __pycache__

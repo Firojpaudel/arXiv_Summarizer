@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Authentication Test Page</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        .warning { background-color: #fff3cd; border-color: #ffeeba; }
+        button { margin: 5px; padding: 10px 15px; }
+        .avatar { width: 40px; height: 40px; border-radius: 50%; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Authentication Test Page</h1>
+    
+    <div class="section info">
+        <h3>Current Session Status</h3>
+        <div id="sessionStatus">Loading...</div>
+        <button onclick="refreshStatus()">Refresh Status</button>
+        <button onclick="refreshSession()">Force Refresh Session</button>
+    </div>
+    
+    <div class="section warning">
+        <h3>Test Actions (Development Only)</h3>
+        <button onclick="forceLogout()">Force Logout</button>
+        <button onclick="clearBrowserCache()">Clear Browser Cache</button>
+        <br>
+        <label for="testEmail">Test different email:</label>
+        <input type="email" id="testEmail" placeholder="test@example.com">
+        <button onclick="testLogin()">Simulate Login</button>
+    </div>
+    
+    <div class="section success">
+        <h3>Recommended Testing Steps</h3>
+        <ol>
+            <li>Check current session status above</li>
+            <li>If logged in, try signing out and signing in with a different Google account</li>
+            <li>Check if avatar loads properly after switching accounts</li>
+            <li>Try refreshing the page after account switch</li>
+            <li>Use "Force Refresh Session" if avatar doesn't update</li>
+        </ol>
+    </div>
+
+    <script>
+        async function refreshStatus() {
+            try {
+                const response = await fetch('/debug-session');
+                const data = await response.json();
+                document.getElementById('sessionStatus').innerHTML = `
+                    <strong>Authenticated:</strong> ${data.is_authenticated}<br>
+                    <strong>User ID:</strong> ${data.user_id || 'None'}<br>
+                    <strong>User Email:</strong> ${data.user_email || 'None'}<br>
+                    <strong>User Name:</strong> ${data.user_name || 'None'}<br>
+                    <strong>Session Avatar:</strong> ${data.user_avatar || 'None'}<br>
+                    <strong>DB Avatar:</strong> ${data.db_user_avatar || 'None'}<br>
+                    ${data.user_avatar ? `<br><img src="${data.user_avatar}" alt="Avatar" class="avatar">` : ''}
+                    <br><small>Full session: ${JSON.stringify(data.session_data, null, 2)}</small>
+                `;
+            } catch (error) {
+                document.getElementById('sessionStatus').innerHTML = `Error: ${error.message}`;
+            }
+        }
+
+        async function refreshSession() {
+            try {
+                const response = await fetch('/refresh-session');
+                const data = await response.json();
+                alert('Session refresh result: ' + JSON.stringify(data, null, 2));
+                refreshStatus();
+            } catch (error) {
+                alert('Error refreshing session: ' + error.message);
+            }
+        }
+
+        async function forceLogout() {
+            try {
+                const response = await fetch('/force-logout');
+                const data = await response.json();
+                alert(data.message);
+                refreshStatus();
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        function clearBrowserCache() {
+            if (confirm('This will reload the page. Continue?')) {
+                location.reload(true);
+            }
+        }
+
+        async function testLogin() {
+            const email = document.getElementById('testEmail').value;
+            if (!email) {
+                alert('Please enter an email address');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/test-login/${email}`);
+                const data = await response.json();
+                alert('Test login result: ' + JSON.stringify(data, null, 2));
+                refreshStatus();
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        // Load status on page load
+        refreshStatus();
+    </script>
+</body>
+</html>

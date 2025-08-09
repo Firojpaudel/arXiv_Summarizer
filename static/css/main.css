@@ -185,7 +185,7 @@ h6 {
   background: var(--accent-color);
   font-size: 14px;
   padding: 10px 20px;
-  margin: 0 0 0 30px;
+  margin: 0 0 0 10px;
   border-radius: 50px;
   transition: 0.3s;
   box-shadow: 2px 4px 6px rgba(0, 0, 0, 0.2); /* Button shadow */
@@ -2416,3 +2416,169 @@ section,
   }
 }
 /* --- End custom summary block styles --- */
+
+/*--------------------------------------------------------------
+# User Dropdown Styling
+--------------------------------------------------------------*/
+.user-dropdown-btn,
+button.user-dropdown-btn,
+.btn.user-dropdown-btn {
+  color: #ffffff !important;
+  background: #424242 !important;
+  background-color: #424242 !important;
+  border: none !important;
+  border-color: transparent !important;
+  border-radius: 50px !important;
+  font-weight: 500 !important;
+  font-size: 14px !important;
+  padding: 8px 16px !important;
+  box-shadow: 2px 4px 6px rgba(0, 0, 0, 0.2) !important;
+  transition: all 0.3s ease !important;
+  min-width: auto !important;
+  white-space: nowrap !important;
+}
+
+.user-dropdown-btn:hover,
+button.user-dropdown-btn:hover,
+.btn.user-dropdown-btn:hover {
+  color: #ffffff !important;
+  background: #525252 !important;
+  background-color: #525252 !important;
+  border: 2px solid #1d1d1d !important;
+  border-color: #1d1d1d !important;
+  box-shadow: 0 8px 12px rgba(0, 0, 0, 0.4) !important;
+  transform: translateY(-4px) !important;
+}
+
+.user-dropdown-btn:focus,
+button.user-dropdown-btn:focus,
+.btn.user-dropdown-btn:focus {
+  color: #ffffff !important;
+  background: #424242 !important;
+  background-color: #424242 !important;
+  border-color: #424242 !important;
+  box-shadow: 0 0 0 0.2rem rgba(66, 66, 66, 0.25), 2px 4px 6px rgba(0, 0, 0, 0.2) !important;
+}
+
+.user-dropdown-btn:active,
+button.user-dropdown-btn:active,
+.btn.user-dropdown-btn:active {
+  color: #ffffff !important;
+  background: #606060 !important;
+  background-color: #606060 !important;
+  border-color: #606060 !important;
+  transform: translateY(-2px) !important;
+}
+
+.user-avatar {
+  border: 2px solid rgba(255,255,255,0.9) !important;
+  object-fit: cover;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.user-dropdown-btn:hover .user-avatar {
+  border-color: rgba(255,255,255,1) !important;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  transform: scale(1.05);
+}
+
+.user-dropdown-menu {
+  border: none !important;
+  border-radius: 20px !important;
+  margin-top: 15px !important;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3) !important;
+  overflow: hidden;
+  min-width: 280px !important;
+}
+
+.user-dropdown-header {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-bottom: 1px solid #dee2e6;
+  border-radius: 20px 20px 0 0;
+}
+
+.dropdown-item {
+  border-radius: 8px !important;
+  margin: 2px 8px !important;
+  transition: all 0.2s ease !important;
+}
+
+.dropdown-item:hover {
+  background-color: var(--accent-color) !important;
+  color: var(--contrast-color) !important;
+  transform: translateX(5px) !important;
+}
+
+.user-dropdown-header {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-bottom: 1px solid #dee2e6;
+}
+
+.user-dropdown-avatar-large {
+  border: 2px solid #dee2e6;
+  object-fit: cover;
+  transition: transform 0.2s ease;
+}
+
+.user-dropdown-avatar-large:hover {
+  transform: scale(1.05);
+}
+
+.guest-mode-btn {
+  color: var(--contrast-color) !important;
+  background: color-mix(in srgb, var(--accent-color), transparent 30%) !important;
+  border: 2px solid var(--accent-color) !important;
+  border-radius: 50px !important;
+  font-weight: 500 !important;
+  font-size: 14px !important;
+  padding: 10px 20px !important;
+  box-shadow: 2px 4px 6px rgba(0, 0, 0, 0.15) !important;
+  transition: all 0.3s ease !important;
+  cursor: default;
+}
+
+.guest-mode-btn:hover {
+  background: color-mix(in srgb, var(--accent-color), transparent 20%) !important;
+  border-color: var(--accent-color) !important;
+  box-shadow: 0 6px 10px rgba(0, 0, 0, 0.25) !important;
+  transform: translateY(-2px) !important;
+}
+
+/* Additional Bootstrap Button Overrides for User Dropdown */
+.header .user-dropdown-btn.btn,
+.header button.user-dropdown-btn,
+.header .dropdown .user-dropdown-btn {
+  background-color: #424242 !important;
+  background: #424242 !important;
+  border-color: #424242 !important;
+  color: #ffffff !important;
+}
+
+.header .user-dropdown-btn.btn:hover,
+.header button.user-dropdown-btn:hover,
+.header .dropdown .user-dropdown-btn:hover {
+  background-color: #525252 !important;
+  background: #525252 !important;
+  border-color: #1d1d1d !important;
+  color: #ffffff !important;
+}
+
+.header .user-dropdown-btn.btn:focus,
+.header button.user-dropdown-btn:focus,
+.header .dropdown .user-dropdown-btn:focus {
+  background-color: #424242 !important;
+  background: #424242 !important;
+  border-color: #424242 !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 0 0.2rem rgba(66, 66, 66, 0.25) !important;
+}
+
+.header .user-dropdown-btn.btn:active,
+.header button.user-dropdown-btn:active,
+.header .dropdown .user-dropdown-btn:active {
+  background-color: #606060 !important;
+  background: #606060 !important;
+  border-color: #606060 !important;
+  color: #ffffff !important;
+}
