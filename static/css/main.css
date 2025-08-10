@@ -2042,6 +2042,172 @@ section,
 }
 
 /*--------------------------------------------------------------
+# Sliding Notification System
+--------------------------------------------------------------*/
+.slide-notification {
+  position: fixed !important;
+  bottom: -120px !important; /* Start below viewport */
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  width: 400px;
+  max-width: calc(100vw - 40px);
+  padding: 20px 28px;
+  border-radius: 16px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  color: white;
+  font-weight: 600;
+  font-size: 15px;
+  z-index: 2147483647 !important; /* Maximum possible z-index */
+  transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  opacity: 0;
+  pointer-events: auto !important;
+  user-select: none;
+}
+
+.slide-notification.show {
+  bottom: 20px !important; /* At bottom of viewport */
+  opacity: 1 !important;
+  transform: translateX(-50%) translateY(0) scale(1) !important;
+}
+
+.slide-notification.slide-out {
+  bottom: -120px !important;
+  opacity: 0 !important;
+  transform: translateX(-50%) translateY(20px) scale(0.9) !important;
+}
+
+/* Success notification styling - More prominent */
+.slide-notification.success {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.95) 0%, rgba(5, 150, 105, 0.95) 100%) !important;
+  border-color: rgba(16, 185, 129, 0.6) !important;
+  box-shadow: 0 16px 48px rgba(16, 185, 129, 0.3), 0 0 0 1px rgba(16, 185, 129, 0.2) !important;
+}
+
+/* Error notification styling */
+.slide-notification.error,
+.slide-notification.danger {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.95) 0%, rgba(185, 28, 28, 0.95) 100%) !important;
+  border-color: rgba(239, 68, 68, 0.6) !important;
+  box-shadow: 0 16px 48px rgba(239, 68, 68, 0.3), 0 0 0 1px rgba(239, 68, 68, 0.2) !important;
+}
+
+/* Info notification styling */
+.slide-notification.info {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.95) 0%, rgba(29, 78, 216, 0.95) 100%) !important;
+  border-color: rgba(59, 130, 246, 0.6) !important;
+  box-shadow: 0 16px 48px rgba(59, 130, 246, 0.3), 0 0 0 1px rgba(59, 130, 246, 0.2) !important;
+}
+
+/* Warning notification styling */
+.slide-notification.warning {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.95) 0%, rgba(180, 83, 9, 0.95) 100%) !important;
+  border-color: rgba(245, 158, 11, 0.6) !important;
+  box-shadow: 0 16px 48px rgba(245, 158, 11, 0.3), 0 0 0 1px rgba(245, 158, 11, 0.2) !important;
+}
+
+.slide-notification .notification-content {
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+
+.slide-notification .notification-icon {
+  margin-right: 16px;
+  font-size: 20px;
+  opacity: 1;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.slide-notification .notification-text {
+  font-size: 15px;
+  line-height: 1.5;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.slide-notification .notification-close {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  color: white !important;
+  cursor: pointer;
+  font-size: 16px;
+  opacity: 0.8;
+  transition: all 0.3s ease !important;
+  margin-left: 20px;
+  padding: 8px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  z-index: 2147483647 !important;
+}
+
+.slide-notification .notification-close:hover {
+  opacity: 1 !important;
+  background: rgba(255, 255, 255, 0.2) !important;
+  transform: scale(1.1) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Mobile responsive */
+@media (max-width: 576px) {
+  .slide-notification {
+    left: 20px !important;
+    right: 20px !important;
+    width: auto !important;
+    max-width: none !important;
+    transform: none !important;
+    bottom: -120px !important;
+  }
+  
+  .slide-notification.show {
+    bottom: 15px !important;
+    transform: none !important;
+  }
+  
+  .slide-notification.slide-out {
+    bottom: -120px !important;
+    transform: translateY(20px) scale(0.9) !important;
+  }
+}
+
+/* Ensure maximum z-index hierarchy */
+.slide-notification,
+.slide-notification * {
+  z-index: 2147483647 !important;
+}
+
+/* Force hide all other notification systems */
+.toast,
+.alert,
+div[class*="alert"],
+.notification,
+div[class*="notification"]:not(.slide-notification),
+.flash-message,
+div[class*="flash"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  z-index: -1 !important;
+}
+
+/* Ensure our flash message data elements are hidden */
+.flash-message-data {
+  display: none !important;
+  visibility: hidden !important;
+}
+
+/*--------------------------------------------------------------
 # Contact Section
 --------------------------------------------------------------*/
 .contact .info-box {
@@ -2486,28 +2652,96 @@ button.user-dropdown-btn:active,
 .user-dropdown-menu {
   border: none !important;
   border-radius: 20px !important;
-  margin-top: 15px !important;
+  margin-top: 52px !important;
   box-shadow: 0 10px 30px rgba(0,0,0,0.3) !important;
-  overflow: hidden;
+  overflow: hidden !important;
   min-width: 280px !important;
+  max-width: 320px !important;
+  /* Position dropdown directly below the button */
+  position: absolute !important;
+  z-index: 1050 !important;
+  /* Center the dropdown below the button */
+  left: 50% !important;
+  right: auto !important;
+  transform: translateX(-50%) !important;
+}
+
+/* Override Bootstrap's dropdown-menu-end positioning */
+.dropdown-menu-end.user-dropdown-menu {
+  left: 50% !important;
+  right: auto !important;
+  transform: translateX(-50%) !important;
+}
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 575px) {
+  .user-dropdown-menu {
+    min-width: 250px !important;
+    max-width: calc(100vw - 40px) !important;
+    /* On mobile, keep it centered but adjust if too close to edge */
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%) !important;
+  }
+  
+  /* If dropdown would overflow on mobile, shift it left */
+  .dropdown-menu-end.user-dropdown-menu {
+    left: auto !important;
+    right: 10px !important;
+    transform: none !important;
+  }
 }
 
 .user-dropdown-header {
   background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
   border-bottom: 1px solid #dee2e6;
-  border-radius: 20px 20px 0 0;
+  border-radius: 20px 20px 0 0 !important;
+  overflow: hidden !important;
 }
 
 .dropdown-item {
-  border-radius: 8px !important;
-  margin: 2px 8px !important;
+  border-radius: 12px !important;
+  margin: 4px 12px !important;
+  padding: 12px 16px !important;
   transition: all 0.2s ease !important;
+  overflow: hidden !important;
+  white-space: nowrap !important;
+  text-overflow: ellipsis !important;
+  max-width: calc(100% - 24px) !important;
+  box-sizing: border-box !important;
 }
 
 .dropdown-item:hover {
   background-color: var(--accent-color) !important;
   color: var(--contrast-color) !important;
   transform: translateX(5px) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
+}
+
+.dropdown-item:focus {
+  background-color: var(--accent-color) !important;
+  color: var(--contrast-color) !important;
+  border-radius: 12px !important;
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(13, 131, 253, 0.25) !important;
+}
+
+.dropdown-item:active {
+  background-color: color-mix(in srgb, var(--accent-color), black 15%) !important;
+  color: var(--contrast-color) !important;
+  border-radius: 12px !important;
+}
+
+/* Ensure dropdown dividers have proper spacing */
+.dropdown-divider {
+  margin: 8px 12px !important;
+  border-top: 1px solid #dee2e6 !important;
+}
+
+/* Last dropdown item should have proper bottom margin */
+.dropdown-item:last-child {
+  margin-bottom: 8px !important;
 }
 
 .user-dropdown-header {
@@ -2543,6 +2777,34 @@ button.user-dropdown-btn:active,
   border-color: var(--accent-color) !important;
   box-shadow: 0 6px 10px rgba(0, 0, 0, 0.25) !important;
   transform: translateY(-2px) !important;
+}
+
+/* Additional positioning and overflow fixes */
+.header .dropdown {
+  position: relative !important;
+}
+
+@media (max-width: 1200px) {
+  .header .dropdown {
+    position: relative !important;
+  }
+  
+  .user-dropdown-menu {
+    /* Keep centered positioning on medium screens too */
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%) !important;
+    margin-top: 15px !important;
+  }
+}
+
+/* Ensure proper z-index stacking */
+.header {
+  z-index: 1000 !important;
+}
+
+.dropdown-menu.show {
+  z-index: 1050 !important;
 }
 
 /* Additional Bootstrap Button Overrides for User Dropdown */
@@ -2581,4 +2843,42 @@ button.user-dropdown-btn:active,
   background: #606060 !important;
   border-color: #606060 !important;
   color: #ffffff !important;
+}
+
+/* Smooth animations for dropdown interactions */
+.dropdown-menu {
+  transition: opacity 0.2s ease, transform 0.2s ease !important;
+}
+
+.dropdown-menu.show {
+  animation: dropdownFadeIn 0.2s ease forwards !important;
+}
+
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* Mobile animation override */
+@media (max-width: 575px) {
+  .dropdown-menu-end.user-dropdown-menu.show {
+    animation: dropdownFadeInMobile 0.2s ease forwards !important;
+  }
+  
+  @keyframes dropdownFadeInMobile {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
 }

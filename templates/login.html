@@ -246,14 +246,11 @@
       <h1 class="login-title">Welcome to Abstractify</h1>
       <p class="login-subtitle">Sign in with Google to access your personalized research summaries</p>
 
-      <!-- Flash messages -->
+      <!-- Flash messages (hidden data for sliding notifications) -->
       {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
           {% for category, message in messages %}
-            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
-              {{ message }}
-              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
+            <div class="flash-message-data" data-category="{{ 'danger' if category == 'error' else category }}" data-message="{{ message }}" style="display: none;"></div>
           {% endfor %}
         {% endif %}
       {% endwith %}

@@ -53,6 +53,170 @@
   });
 
   /**
+   * Sliding Notification System
+   */
+  window.SlideNotification = {
+    show: function(message, type = 'info', duration = 4000) {
+      // Force remove any existing notifications and alerts
+      this.removeAllNotifications();
+      
+      // Create notification element
+      const notification = document.createElement('div');
+      notification.className = `slide-notification ${type}`;
+      notification.style.zIndex = '2147483647'; // Force maximum z-index
+      notification.style.position = 'fixed';
+      
+      // Get appropriate icon for notification type
+      let icon = '';
+      switch(type) {
+        case 'success':
+          icon = '<i class="bi bi-check-circle-fill notification-icon"></i>';
+          break;
+        case 'error':
+        case 'danger':
+          icon = '<i class="bi bi-exclamation-triangle-fill notification-icon"></i>';
+          break;
+        case 'warning':
+          icon = '<i class="bi bi-exclamation-triangle-fill notification-icon"></i>';
+          break;
+        case 'info':
+        default:
+          icon = '<i class="bi bi-info-circle-fill notification-icon"></i>';
+          break;
+      }
+      
+      notification.innerHTML = `
+        <div class="notification-content">
+          ${icon}
+          <span class="notification-text">${message}</span>
+        </div>
+        <button class="notification-close" onclick="SlideNotification.hide(this.parentElement)" aria-label="Close notification">
+          <i class="bi bi-x"></i>
+        </button>
+      `;
+      
+      // Add to DOM at the very end of body to ensure highest stacking
+      document.body.appendChild(notification);
+      
+      // Force maximum z-index on all child elements
+      const allElements = notification.querySelectorAll('*');
+      allElements.forEach(el => {
+        el.style.zIndex = '2147483647';
+      });
+      
+      // Force reflow to ensure transition works
+      notification.offsetHeight;
+      
+      // Trigger slide in animation
+      setTimeout(() => {
+        notification.classList.add('show');
+      }, 100);
+      
+      // Auto hide after duration
+      if (duration > 0) {
+        setTimeout(() => {
+          this.hide(notification);
+        }, duration);
+      }
+      
+      return notification;
+    },
+    
+    hide: function(notification) {
+      if (notification && notification.parentElement) {
+        notification.classList.remove('show');
+        notification.classList.add('slide-out');
+        
+        // Remove from DOM after animation
+        setTimeout(() => {
+          if (notification.parentElement) {
+            notification.parentElement.removeChild(notification);
+          }
+        }, 800);
+      }
+    },
+    
+    removeAllNotifications: function() {
+      // Remove all existing slide notifications
+      const existingNotifications = document.querySelectorAll('.slide-notification');
+      existingNotifications.forEach(notification => {
+        this.hide(notification);
+      });
+      
+      // Force remove any Bootstrap alerts or other notification systems
+      const alerts = document.querySelectorAll('.alert, .toast, [class*="notification"]:not(.slide-notification), [class*="flash"]');
+      alerts.forEach(alert => {
+        alert.style.display = 'none';
+        alert.style.visibility = 'hidden';
+        alert.style.opacity = '0';
+        alert.style.height = '0';
+        alert.style.zIndex = '-1';
+        if (alert.parentElement) {
+          alert.parentElement.removeChild(alert);
+        }
+      });
+    }
+  };
+
+  /**
+   * Process Flask flash messages and convert to sliding notifications
+   */
+  function processFlashMessages() {
+    // First, aggressively remove any Bootstrap alerts
+    const existingAlerts = document.querySelectorAll('.alert, .toast, [class*="alert"], [class*="flash"]:not(.flash-message-data)');
+    existingAlerts.forEach(alert => {
+      alert.style.display = 'none !important';
+      alert.style.visibility = 'hidden !important';
+      alert.style.opacity = '0 !important';
+      alert.style.height = '0 !important';
+      alert.style.zIndex = '-1 !important';
+      alert.remove();
+    });
+    
+    const flashMessages = document.querySelectorAll('.flash-message-data');
+    flashMessages.forEach(messageElement => {
+      const category = messageElement.dataset.category;
+      const message = messageElement.dataset.message;
+      
+      // Show sliding notification at bottom of viewport with maximum z-index
+      SlideNotification.show(message, category, 4000);
+      
+      // Remove the flash message element
+      messageElement.remove();
+    });
+  }
+
+  /**
+   * Force cleanup of competing notification systems
+   */
+  function forceCleanupNotifications() {
+    const competingElements = document.querySelectorAll('.alert, .toast, .bootstrap-alert, [class*="alert"], [role="alert"]');
+    competingElements.forEach(el => {
+      el.style.display = 'none !important';
+      el.style.visibility = 'hidden !important';
+      el.style.zIndex = '-999999 !important';
+      el.remove();
+    });
+  }
+
+  /**
+   * Initialize sliding notifications on page load
+   */
+  window.addEventListener('load', function() {
+    forceCleanupNotifications();
+    setTimeout(processFlashMessages, 200);
+  });
+
+  // Also process messages on DOMContentLoaded for faster response
+  document.addEventListener('DOMContentLoaded', function() {
+    forceCleanupNotifications();
+    setTimeout(processFlashMessages, 100);
+  });
+
+  // Periodic cleanup to ensure no competing notifications appear
+  setInterval(forceCleanupNotifications, 2000);
+
+  /**
    * Scroll top button
    */
   let scrollTop = document.querySelector('.scroll-top');
